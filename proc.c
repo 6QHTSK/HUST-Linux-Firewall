@@ -45,6 +45,12 @@ static ssize_t proc_clean_connection_log(struct file *file,const char __user *us
     return count;
 }
 
+static ssize_t proc_clean_rule_log(struct file *file,const char __user *usr_buf, size_t count, loff_t *pos){
+    printk("Clean Connection Log");
+    clean_rule_log();
+    return count;
+}
+
 static struct proc_dir_entry *proc_firewall;
 DEFINE_SEQFILE_ENTRY(rule,proc_update_rules);
 DEFINE_SEQFILE_ENTRY(nat,proc_update_nat);
@@ -53,7 +59,7 @@ DEFINE_SEQFILE_ENTRY_R(udp_connection);
 DEFINE_SEQFILE_ENTRY_R(icmp_connection);
 
 DEFINE_SEQFILE_ENTRY(connection_log,proc_clean_connection_log);
-DEFINE_SEQFILE_ENTRY_R(rule_log);
+DEFINE_SEQFILE_ENTRY(rule_log,proc_clean_rule_log);
 
 
 void register_proc_file(void){

@@ -32,19 +32,24 @@ struct icmp_status{
 static DEFINE_SPINLOCK(icmp_map_spin);
 static struct rb_root icmp_map = RB_ROOT;
 
-// 由于只有PING_REPLY可以调用此函数，故字段固定为PING_REPLY
+// 由于只有PING_REPLY/PING_REQUEST可以调用此函数，故字段固定为PING_REQUEST/PING_REPLY
 static inline void icmp_status_peer(struct icmp_status* dest, const struct icmp_status* src){
     memcpy(&dest->src_addr,&src->dest_addr,sizeof(struct in_addr));
     memcpy(&dest->dest_addr,&src->src_addr,sizeof(struct in_addr));
     dest->timestamp = src->timestamp;
-    dest->status = PING_REPLY;
+    dest->status = src->status == PING_REPLY ? PING_REQUEST : PING_REPLY;
 }
 
 static int icmp_status_cmp(const struct icmp_status* a, const struct icmp_status* b){
     int src_cmp;
     src_cmp = in_addr_cmp(&a->src_addr,&b->src_addr);
     if(src_cmp == 0){
-        return in_addr_cmp(&a->dest_addr,&b->dest_addr);
+        int dest_cmp;
+        dest_cmp = in_addr_cmp(&a->dest_addr,&b->dest_addr);
+        if(dest_cmp == 0){
+            return a->status == b->status ? 0 : (a->status < b->status ? -1 : 1) ;
+        }
+        return dest_cmp;
     }
     return src_cmp;
 }
@@ -156,9 +161,6 @@ int check_icmp_packet(struct sk_buff *skb){
                 if(rule_matching(&p_status->src_addr,&p_status->dest_addr,IPPROTO_ICMP,0,0) == 0){
                     goto deny;
                 }
-                if(rule_matching(&p_status_peer->src_addr,&p_status_peer->dest_addr,IPPROTO_ICMP,0,0) == 0){
-                    goto deny;
-                }
 
 //                print_icmp_status("Accept new icmp connection",p_status);
 //                print_icmp_status("Accept new icmp connection",p_status_peer);
@@ -172,9 +174,6 @@ int check_icmp_packet(struct sk_buff *skb){
                 goto deny;
             }
         }else{
-            if(target.status == PING_REQUEST){
-                goto deny;
-            }
             // 在红黑树查询到目标，检查是否超时
             p_status_peer = icmp_map_find_peer(&target);
             //print_icmp_status(&target);

@@ -176,6 +176,7 @@ int rule_matching(struct in_addr *src_ip, struct in_addr *dest_ip, __u8 protocol
     struct firewall_rule *current_rule;
     spin_lock_bh(&rule_spin);
     list_for_each_entry(current_rule, &rule, list_node) {
+        //printk("%x %x %x %x %d %d",(src_ip->s_addr & MASK(current_rule->src_mask)) , current_rule->src_ip.s_addr,  (dest_ip->s_addr & MASK(current_rule->dest_mask)) , current_rule->dest_ip.s_addr , protocol_match(protocol,current_rule) , current_rule->flag.permit);
         if ((src_ip->s_addr & MASK(current_rule->src_mask)) == current_rule->src_ip.s_addr
         && (dest_ip->s_addr & MASK(current_rule->dest_mask)) == current_rule->dest_ip.s_addr
         && protocol_match(protocol,current_rule)) {

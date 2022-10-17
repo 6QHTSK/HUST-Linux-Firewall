@@ -161,6 +161,7 @@ int check_tcp_packet(struct sk_buff *skb){
         }else{
             // 正常连接以及最终四次挥手过程中，不可能会出现没有ack和有syn的报文。
             if(p_status->flag.value >= 0x3 && (!tcph->ack || tcph->syn)){
+                //printk("Deny a Invalid package");
                 goto deny;
             }
             // 在红黑树查询到目标
@@ -170,13 +171,13 @@ int check_tcp_packet(struct sk_buff *skb){
             if(tcph->fin){
                 p_status->flag.fin = 1;
                 p_status_peer->flag.fin_peer = 1;
-                //printk("Received FIN ");
-                //print_tcp_status(&target);
+                //printk("Received FIN %pISp => %pISp", &p_status->src_addr, &p_status->dest_addr);
             }else if(tcph->rst){
                 print_tcp_status("TCP Connection RST",p_status);
                 tcp_map_delete(p_status);
                 tcp_map_delete(p_status_peer);
-            }else if(tcph->ack && p_status->flag.value == 0xF){
+            }
+            if(tcph->ack && p_status->flag.value == 0xF){
                 print_tcp_status("TCP Connection Closed",p_status);
                 tcp_map_delete(p_status);
                 tcp_map_delete(p_status_peer);
